@@ -79,7 +79,7 @@ impl Tree {
         let mut node = root;
         let mut bits: Vec<u32> = vec![];
         while node.zero_count + node.one_count > 0 {
-            if node.one_count > node.zero_count && node.zero_count > 0 {
+            if node.one_count == 0 || (node.one_count >= node.zero_count && node.zero_count > 0) {
                 println!("0: {},{}", node.zero_count, node.one_count);
                 bits.push(0);
                 node = node.zero.as_ref().unwrap();
@@ -98,14 +98,16 @@ fn bin_array_to_number(arr: Vec<u32>) -> i32 {
     let base: i32 = 2;
     let mut out = 0;
 
-    for n in arr.iter().rev() {
-        out += base.pow(*n);
+    for (i, n) in arr.iter().rev().enumerate() {
+        if *n == 1 {
+            out += base.pow(i as u32);
+        }
     }
     return out;
 }
 
 fn main() -> Result<(), Error> {
-    let path = "./data/input_short.txt";
+    let path = "./data/input.txt";
     let input = File::open(path)?;
     let reader = BufReader::new(input);
 
