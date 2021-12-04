@@ -16,7 +16,7 @@ impl BTNode {
             zero: None,
             one: None,
             zero_count: 0,
-            one_count: 1,
+            one_count: 0,
         }
     }
 }
@@ -32,7 +32,7 @@ impl Tree {
         }
     }
 
-    fn update_with_line(node: &Box<BTNode>, s: &str) {
+    fn update_with_line(node: &mut Box<BTNode>, s: &str) {
         if s.len() == 0 {
             return;
         }
@@ -44,74 +44,55 @@ impl Tree {
                 if node.zero.is_none() {
                     node.zero = Some(Box::new(BTNode::new()));
                 }
-                Tree::update_with_line(&node.zero.unwrap(), &s[1..]);
+                Tree::update_with_line(node.zero.as_mut().unwrap(), &s[1..]);
             }
             '1' => {
                 node.one_count += 1;
                 if node.one.is_none() {
                     node.one = Some(Box::new(BTNode::new()));
                 }
-                Tree::update_with_line(&node.one.unwrap(), &s[1..]);
+                Tree::update_with_line(node.one.as_mut().unwrap(), &s[1..]);
             }
             _ => {}
         }
     }
 
-    fn get_oxygen(node: &Box<BTNode>) -> i32 {
+    fn get_oxygen(root: &Box<BTNode>) -> i32 {
+        let mut node = root;
         let mut bits: Vec<u32> = vec![];
-        while !(node.zero.is_none() | node.one.is_none()) {
+        while node.zero_count + node.one_count > 0 {
             if node.zero_count > node.one_count {
+                println!("0: {},{}", node.zero_count, node.one_count);
                 bits.push(0);
-                node = &node.zero.unwrap();
+                node = node.zero.as_ref().unwrap();
             } else {
+                println!("1: {},{}", node.zero_count, node.one_count);
                 bits.push(1);
-                node = &node.one.unwrap();
+                node = node.one.as_ref().unwrap();
             }
         }
+        println!("oxy: {:?}", bits);
         return bin_array_to_number(bits);
     }
 
-    fn get_co2(node: &BTNode) -> i32 {
+    fn get_co2(root: &Box<BTNode>) -> i32 {
+        let mut node = root;
         let mut bits: Vec<u32> = vec![];
-        while !(node.zero.is_none() | node.one.is_none()) {
-            if node.zero_count <= node.one_count {
+        while node.zero_count + node.one_count > 0 {
+            if node.one_count > node.zero_count && node.zero_count > 0 {
+                println!("0: {},{}", node.zero_count, node.one_count);
                 bits.push(0);
-                node = &node.zero.unwrap();
+                node = node.zero.as_ref().unwrap();
             } else {
+                println!("1: {},{}", node.zero_count, node.one_count);
                 bits.push(1);
-                node = &node.one.unwrap();
+                node = node.one.as_ref().unwrap();
             }
         }
+        println!("co2: {:?}", bits);
         return bin_array_to_number(bits);
     }
 }
-
-// impl BTNode {
-//     fn update_with_line(&self, s: &str) {
-//         if s.len() == 0 {
-//             return;
-//         }
-
-//         let c = s.chars().next().unwrap();
-//         match c {
-//             '0' => {
-//                 self.zero_count += 1;
-//                 if self.zero.is_none() {
-//                     self.zero = Some(Box::new(BTNode::new()));
-//                 }
-//                 self.zero.unwrap().update_with_line(&s[1..]);
-//             }
-//             '1' => {
-//                 self.one_count += 1;
-//                 if self.one.is_none() {
-//                     self.one = Some(Box::new(BTNode::new()));
-//                 }
-//                 self.one.unwrap().update_with_line(&s[1..]);
-//             }
-//             _ => {}
-//         }
-//     }
-// }
 
 fn bin_array_to_number(arr: Vec<u32>) -> i32 {
     let base: i32 = 2;
@@ -123,72 +104,23 @@ fn bin_array_to_number(arr: Vec<u32>) -> i32 {
     return out;
 }
 
-// fn descend_tree(child_node: &ChildNode, s: &str) {
-//     if s.len() == 0 {
-//         return;
-//     }
-
-//     let mut node = child_node.as_ref().unwrap();
-//     let c = s.chars().next().unwrap();
-//     match c {
-//         '0' => {
-//             node.zero_count += 1;
-//             if node.zero.is_none() {
-//                 node.zero = Some(Box::new(BTNode::new()));
-//             }
-//             descend_tree(&node.zero, &s[1..])
-//         }
-//         '1' => {
-//             node.one_count += 1;
-//             if node.one.is_none() {
-//                 node.one = Some(Box::new(BTNode::new()));
-//             }
-//             descend_tree(&node.one, &s[1..])
-//         }
-//         _ => {}
-//     }
-// }
-
-// fn populate_tree(tree: &Tree, reader: BufReader<File>) -> Result<(), Error> {
-//     for line in reader.lines() {
-//         let s = line?;
-
-//         let mut node: ChildNode = tree.head;
-//         for bit in s.chars() {
-//             if bit == '0' {
-//                 node.zero_count += 1;
-//                 if node.zero.is_none() {
-//                     node.zero = Some(Box::new(BTNode::new()));
-//                 }
-//                 node = node.zero.unwrap();
-//             } else {
-//                 node.one_count += 1;
-//                 if node.one.is_none() {
-//                     node.one = Some(Box::new(BTNode::new()));
-//                 }
-//                 node = node.one.unwrap();
-//             }
-//         }
-//     }
-//     Ok(())
-// }
-
 fn main() -> Result<(), Error> {
-    let path = "./data/input.txt";
+    let path = "./data/input_short.txt";
     let input = File::open(path)?;
     let reader = BufReader::new(input);
 
     let tree = Tree::new();
+    let mut root = Box::new(tree.head);
     for line in reader.lines() {
         let s = line?;
-        Tree::update_with_line(&Box::new(tree.head), &s);
+        Tree::update_with_line(&mut root, &s);
     }
 
-    // let oxygen = Tree::get_oxygen(&Box::new(tree.head));
-    // let co2 = Tree::get_co2(&Box::new(tree.head));
+    let oxygen = Tree::get_oxygen(&root);
+    let co2 = Tree::get_co2(&root);
 
-    // println!("oxy: {}, co2: {}", oxygen, co2);
-    // println!("result: {}", oxygen * co2);
+    println!("oxy: {}, co2: {}", oxygen, co2);
+    println!("result: {}", oxygen * co2);
 
     Ok(())
 }
